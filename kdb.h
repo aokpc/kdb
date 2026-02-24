@@ -92,7 +92,6 @@ extern _KDB __KDB;
 #define kdbd __KDB.debugger(__LINE__)
 #define kdbprint(...)  __KDB.print(__LINE__, __VA_ARGS__)
 #define kdbprintln(...)  __KDB.println(__LINE__, __VA_ARGS__)
-#define debugger __KDB.debugger(__LINE__)
 
 /*
  * プロトコル仕様:
