@@ -5,12 +5,17 @@ int count = 0;
 void setup()
 {
     Serial.begin(9600);
+    // init
     kdbinit;
+    // capture variable
     kdbcap(count);
-    kdbprint("start");
+    // Serial.println
+    kdbprintln("start");
 }
 
 void loop() {
     count++;
-    debugger;
+
+    // debugger;
+    kdbd;
 }
