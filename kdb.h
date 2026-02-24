@@ -14,15 +14,7 @@
 
 // 前方宣言
 struct _KDB_PtrWithSize;
-enum _KDB_OpType;
 class _KDB;
-
-// 構造体定義
-struct _KDB_PtrWithSize
-{
-    uint8_t size;
-    uint8_t *ptr;
-};
 
 // オペレーションタイプ列挙型
 enum _KDB_OpType
@@ -41,6 +33,13 @@ enum _KDB_OpType
     _KDB_READ_CAP_RES,
     _KDB_READ_PIN_RES,
     _KDB_PRINT,
+};
+
+// 構造体定義
+struct _KDB_PtrWithSize
+{
+    uint8_t size;
+    uint8_t *ptr;
 };
 
 // メインデバッガクラス
