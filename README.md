@@ -43,6 +43,8 @@ pip install -r requirements.txt
 
 ### 2. Arduino側の設定
 
+このリポジトリをzipファイルとしてダウンロードしてライブラリにインストール
+
 ```cpp
 #include "kdb.h"
 
