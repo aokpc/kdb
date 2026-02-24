@@ -1,0 +1,4 @@
+# KDB Arduino Debugger - Python Dependencies
+# Core dependencies
+websockets>=12.0
+pyserial>=3.5

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KDB Arduino Debugger</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div class="sidebar">
+        <!-- 接続設定 -->
+        <div class="section">
+            <h3>接続設定</h3>
+            <div id="connectionStatus" class="connection-status disconnected">
+                未接続
+            </div>
+            <div class="input-group">
+                <select id="portSelect">
+                    <option value="">ポートを選択</option>
+                </select>
+                <button onclick="refreshPorts()">更新</button>
+            </div>
+            <div class="input-group">
+                <select id="baudRate">
+                    <option value="9600">9600</option>
+                    <option value="31520">31520</option>
+                    <option value="115200">115200</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <button id="connectBtn" class="btn-primary" onclick="toggleConnection()">接続</button>
+            </div>
+        </div>
+
+        <!-- ファイル管理 -->
+        <div class="section">
+            <h3>Arduinoファイル</h3>
+            <button onclick="refreshFiles()" class="btn-primary">ファイル検索</button>
+            <div id="fileList" class="file-list"></div>
+        </div>
+
+        <!-- デバッガ制御 -->
+        <div class="section">
+            <h3>デバッガ制御</h3>
+            <button id="continueBtn" class="btn-success" onclick="continueExecution()" disabled>実行継続</button>
+        </div>
+
+        <!-- キャプチャ変数 -->
+        <div class="section">
+            <h3>キャプチャ変数</h3>
+            <div id="captureList"></div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="toolbar">
+            <span>KDB Arduino Debugger</span>
+            <span id="currentFile">ファイルが選択されていません</span>
+        </div>
+
+        <div class="code-editor">
+            <div id="codeLines" class="code-lines">
+                <div class="line">
+                    <div class="line-number">1</div>
+                    <div class="line-content">// Arduinoファイルを選択してください</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="debug-panel">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('log')">ログ</button>
+                <button class="tab" onclick="switchTab('memory')">メモリ</button>
+                <button class="tab" onclick="switchTab('pins')">ピン制御</button>
+            </div>
+
+            <div id="logTab" class="tab-content active">
+                <div id="logArea" style="height: 240px; overflow-y: auto;"></div>
+            </div>
+
+            <div id="memoryTab" class="tab-content">
+                <div class="memory-viewer">
+                    <div class="memory-input">
+                        <input type="text" id="memoryAddress" placeholder="アドレス (0x1000)" style="width: 120px;">
+                        <input type="number" id="memorySize" placeholder="サイズ" value="4" style="width: 80px;">
+                        <button onclick="readMemory()" class="btn-primary">読み取り</button>
+                    </div>
+                    <div id="memoryDisplay" class="memory-display">メモリデータがここに表示されます</div>
+                </div>
+            </div>
+
+            <div id="pinsTab" class="tab-content">
+                <div class="pin-controls">
+                    <div class="pin-control">
+                        <label>ピン:</label>
+                        <input type="number" id="pinNumber" min="0" max="20" value="13">
+                        <button onclick="readPin()" class="btn-primary">読み取り</button>
+                    </div>
+                    <div class="pin-control">
+                        <label>値:</label>
+                        <select id="pinValue">
+                            <option value="0">LOW</option>
+                            <option value="1">HIGH</option>
+                        </select>
+                        <button onclick="writePin()" class="btn-success">書き込み</button>
+                    </div>
+                </div>
+                <div id="pinStatus" style="margin-top: 10px;"></div>
+            </div>
+        </div>
+        
+        <div class="status-bar">
+            <span id="statusText">準備完了</span>
+            <span id="debugStatus"></span>
+        </div>
+    </div>
+
+    <script src="./script.js"></script>
+</body>
+</html>
