@@ -31,6 +31,13 @@ void _KDB::debugger(unsigned line)
 
 void _KDB::capture(unsigned line, void *x, uint8_t size)
 {
+	for (int i = 0; i < capsize; i++) {
+		if (caps[i].ptr == (uint8_t *)x) {
+			if (caps[i].size == size) {
+				return;
+			}
+		}
+	}
 	readbuf[0] = line >> 8;
 	readbuf[1] = line;
 

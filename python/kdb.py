@@ -114,12 +114,12 @@ class KDBSerialHandler:
                     if self.serial_port.in_waiting == 0:
                         time.sleep(0.02)  # データ待ちの際はスリープを長めに
                         continue
-                    
+
                     # 1バイトずつ読み取ってヘッダーを探す
                     byte = self.serial_port.read(1)
                     if not byte:
                         continue
-                        
+
                     b = byte[0]
 
                     if state == 0:
@@ -149,7 +149,7 @@ class KDBSerialHandler:
 
         except Exception as e:
             print(f"Read response error: {e}")
-            
+
         return None
 
     def continue_execution(self) -> bool:
@@ -260,21 +260,21 @@ class KDBFileManager:
     def find_kdbcap_variables(self) -> Dict[int, List[str]]:
         """ファイル内のkdbcap変数を正規表現で検索"""
         # kdbcap(変数名)のパターンを定義
-        pattern = r'kdbcap\s*\(\s*([a-zA-Z_][a-zA-Z0-9_]*(?:\[[^\]]*\])*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)\s*\)'
-        
+        pattern = r"kdbcap\s*\(\s*([a-zA-Z_][a-zA-Z0-9_]*(?:\[[^\]]*\])*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)\s*\)"
+
         result = {}
         for line_num, line_content in enumerate(self.file_lines, 1):
             matches = re.findall(pattern, line_content)
             if matches:
                 result[line_num] = matches
-                
+
         return result
 
     def get_variable_name_at_line(self, line_number: int) -> Optional[str]:
         """指定行のkdbcap変数名を取得"""
         if 0 < line_number <= len(self.file_lines):
             line_content = self.file_lines[line_number - 1]
-            pattern = r'kdbcap\s*\(\s*([a-zA-Z_][a-zA-Z0-9_]*(?:\[[^\]]*\])*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)\s*\)'
+            pattern = r"kdbcap\s*\(\s*([a-zA-Z_][a-zA-Z0-9_]*(?:\[[^\]]*\])*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)\s*\)"
             match = re.search(pattern, line_content)
             if match:
                 return match.group(1)
@@ -284,15 +284,15 @@ class KDBFileManager:
         """キャプチャ情報を変数名付きで取得"""
         variables = self.find_kdbcap_variables()
         result = {}
-        
+
         for line_num, var_names in variables.items():
             for i, var_name in enumerate(var_names):
                 result[line_num] = {
-                    'line': line_num,
-                    'variable_name': var_name,
-                    'line_content': self.get_line(line_num).strip()
+                    "line": line_num,
+                    "variable_name": var_name,
+                    "line_content": self.get_line(line_num).strip(),
                 }
-                
+
         return result
 
 
@@ -309,6 +309,8 @@ class KDBWebSocketServer:
 
         # シリアル通信監視フラグ
         self.should_monitor = False
+
+        self.init_time = 0.0
 
     async def register(self, websocket):
         """クライアント登録"""
@@ -333,9 +335,9 @@ class KDBWebSocketServer:
 
         async def monitor():
             consecutive_empty_reads = 0
-            base_sleep = 0.1   # 基本スリープ時間を100msに増加
-            max_sleep = 1.0    # 最大スリープ時間を1秒に増加
-            
+            base_sleep = 0.1  # 基本スリープ時間を100msに増加
+            max_sleep = 1.0  # 最大スリープ時間を1秒に増加
+
             while self.should_monitor:
                 if self.serial_handler.is_connected and self.serial_handler.serial_port:
                     try:
@@ -354,10 +356,12 @@ class KDBWebSocketServer:
 
                 # アダプティブスリープ：データがない場合はスリープ時間をより長く延長
                 if consecutive_empty_reads > 5:  # しきい値を下げる
-                    sleep_time = min(base_sleep * (consecutive_empty_reads // 5), max_sleep)
+                    sleep_time = min(
+                        base_sleep * (consecutive_empty_reads // 5), max_sleep
+                    )
                 else:
                     sleep_time = base_sleep
-                    
+
                 await asyncio.sleep(sleep_time)
 
         if not self.should_monitor:
@@ -427,7 +431,9 @@ class KDBWebSocketServer:
                         "message": f"Debugger initialized at line {line_number}",
                     }
                 )
-                self.serial_handler.continue_execution()
+                if self.init_time < time.time() - 10:
+                    self.init_time = time.time()
+                    self.serial_handler.continue_execution()
 
         elif op_type == KDBOpType.PRINT:
             # プリント出力
@@ -503,7 +509,9 @@ class KDBWebSocketServer:
             elif command == "list_variables":
                 # kdbcap変数一覧を取得
                 variables = self.file_manager.get_capture_info_with_variables()
-                await websocket.send(json.dumps({"type": "variable_list", "variables": variables}))
+                await websocket.send(
+                    json.dumps({"type": "variable_list", "variables": variables})
+                )
 
             elif command == "load_file":
                 # ファイル読み込み
@@ -558,6 +566,39 @@ class KDBWebSocketServer:
                             )
                         )
 
+            elif command == "write_capture":
+                # キャプチャデータ書き込み
+                cap_id = data.get("capture_id")
+                hex_data = data.get("data", "")
+
+                if cap_id is not None and hex_data:
+                    try:
+                        # 16進文字列をバイトデータに変換
+                        write_data = bytes.fromhex(hex_data)
+                        success = self.serial_handler.write_capture(cap_id, write_data)
+
+                        await websocket.send(
+                            json.dumps(
+                                {
+                                    "type": "capture_write_result",
+                                    "capture_id": cap_id,
+                                    "success": success,
+                                    "message": "success" if success else "failed",
+                                }
+                            )
+                        )
+                    except ValueError:
+                        await websocket.send(
+                            json.dumps(
+                                {
+                                    "type": "capture_write_result",
+                                    "capture_id": cap_id,
+                                    "success": False,
+                                    "message": "invalid_hex",
+                                }
+                            )
+                        )
+
             elif command == "read_memory":
                 # メモリ読み取り
                 address = int(data.get("address", "0"), 16)
@@ -575,6 +616,40 @@ class KDBWebSocketServer:
                             }
                         )
                     )
+
+            elif command == "write_memory":
+                # メモリ書き込み
+                address = int(data.get("address", "0"), 16)
+                hex_data = data.get("data", "")
+
+                if hex_data:
+                    try:
+                        # 16進文字列をバイトデータに変換
+                        write_data = bytes.fromhex(hex_data)
+                        success = self.serial_handler.write_memory(address, write_data)
+
+                        await websocket.send(
+                            json.dumps(
+                                {
+                                    "type": "memory_write_result",
+                                    "address": hex(address),
+                                    "size": len(write_data),
+                                    "success": success,
+                                    "message": "success" if success else "failed",
+                                }
+                            )
+                        )
+                    except ValueError:
+                        await websocket.send(
+                            json.dumps(
+                                {
+                                    "type": "memory_write_result",
+                                    "address": hex(address),
+                                    "success": False,
+                                    "message": "invalid_hex",
+                                }
+                            )
+                        )
 
             elif command == "read_pin":
                 # ピン読み取り
@@ -625,10 +700,32 @@ class KDBWebSocketServer:
         return websockets.serve(self.handler, self.host, self.port)
 
 
+def run_webview():
+    try:
+        import webview
+
+        window = webview.create_window(
+            "KDB App", url="./index.html", height=800, width=1200
+        )
+        webview.start(http_server=False, debug=True)
+    except:
+        # index.htmlを自動的に開く
+        import webbrowser
+
+        html_path = os.path.join(os.path.dirname(__file__), "index.html")
+        if os.path.exists(html_path):
+            webbrowser.open(f"file://{os.path.abspath(html_path)}")
+            print(f"Opening {html_path} in browser...")
+        else:
+            print("index.html not found, please open http://localhost:8765 manually")
+
+
+def run_main():
+    asyncio.run(main())
+
+
 async def main():
     """メイン関数"""
-    import webbrowser
-    import os
     server = KDBWebSocketServer()
 
     # WebSocketサーバー開始
@@ -637,14 +734,6 @@ async def main():
     print("KDB Arduino Debugger Server")
     print("WebSocket server: ws://localhost:8765")
     print("Press Ctrl+C to stop")
-    
-    # index.htmlを自動的に開く
-    html_path = os.path.join(os.path.dirname(__file__), "index.html")
-    if os.path.exists(html_path):
-        webbrowser.open(f"file://{os.path.abspath(html_path)}")
-        print(f"Opening {html_path} in browser...")
-    else:
-        print("index.html not found, please open http://localhost:8765 manually")
 
     await start_server
     await asyncio.Future()  # 無限待機
@@ -652,6 +741,7 @@ async def main():
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        threading.Thread(target=run_main, args=[]).start()
+        run_webview()
     except KeyboardInterrupt:
         print("\nServer stopped")

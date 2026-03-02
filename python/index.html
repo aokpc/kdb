@@ -85,6 +85,11 @@
                         <input type="number" id="memorySize" placeholder="サイズ" value="4" style="width: 80px;">
                         <button onclick="readMemory()" class="btn-primary">読み取り</button>
                     </div>
+                    <div class="memory-write">
+                        <input type="text" id="writeMemoryAddress" placeholder="書き込みアドレス (0x1000)" style="width: 140px;">
+                        <input type="text" id="writeMemoryData" placeholder="16進データ (01FF)" style="width: 120px;">
+                        <button onclick="writeMemory()" class="btn-success">書き込み</button>
+                    </div>
                     <div id="memoryDisplay" class="memory-display">メモリデータがここに表示されます</div>
                 </div>
             </div>
