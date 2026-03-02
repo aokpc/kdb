@@ -40,12 +40,12 @@ ardebug/
 
 ```bash
 # 依存関係をインストール
-pip install -r requirements.txt
+pip install -r python/requirements.txt
 ```
 
 ### 2. Arduino側の設定
 
-このリポジトリをzipファイルとしてダウンロードしてライブラリにインストール
+このリポジトリを[ダウンロード](https://github.com/aokpc/kdb/archive/refs/heads/main.zip)してライブラリにインストール
 
 ```cpp
 #include "kdb.h"
