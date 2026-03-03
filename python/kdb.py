@@ -587,7 +587,7 @@ class KDBWebSocketServer:
                                 }
                             )
                         )
-                    except ValueError:
+                    except ValueError as e:
                         await websocket.send(
                             json.dumps(
                                 {
@@ -701,23 +701,26 @@ class KDBWebSocketServer:
 
 
 def run_webview():
+    html_path = os.path.join(os.path.dirname(__file__), "index.html")
+    if not os.path.exists(html_path):
+        print("index.html not found, please open http://localhost:8765 manually")
+        return
     try:
         import webview
 
         window = webview.create_window(
-            "KDB App", url="./index.html", height=800, width=1200
+            "KDB App",
+            url=f"file://{os.path.abspath(html_path)}",
+            height=800,
+            width=1200,
         )
-        webview.start(http_server=False, debug=True)
+        webview.start(http_server=False)
     except:
         # index.htmlを自動的に開く
         import webbrowser
 
-        html_path = os.path.join(os.path.dirname(__file__), "index.html")
-        if os.path.exists(html_path):
-            webbrowser.open(f"file://{os.path.abspath(html_path)}")
-            print(f"Opening {html_path} in browser...")
-        else:
-            print("index.html not found, please open http://localhost:8765 manually")
+        webbrowser.open(f"file://{os.path.abspath(html_path)}")
+        print(f"Opening {html_path} in browser...")
 
 
 def run_main():
@@ -741,7 +744,7 @@ async def main():
 
 if __name__ == "__main__":
     try:
-        threading.Thread(target=run_main, args=[]).start()
+        threading.Thread(target=run_main, args=[], daemon=True).start()
         run_webview()
     except KeyboardInterrupt:
         print("\nServer stopped")

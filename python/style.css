@@ -233,13 +233,18 @@ button:disabled {
 }
 
 .line.current {
-    background-color: #3c3c1a;
-    border-left-color: #ffeb3b;
+    background-color: #3c3c1a !important;
+    border-left-color: #ffeb3b !important;
 }
 
 .line.breakpoint {
     background-color: #5a2d2d;
     border-left-color: #f44336;
+}
+
+.line.capture {
+    background-color: #1a3c1c;
+    border-left-color: #62ff3b;
 }
 
 .capture-item {

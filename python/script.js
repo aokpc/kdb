@@ -19,7 +19,21 @@ class KDBClient {
         this.currentLine = 0;
 
         /**
-         * @type {Map<number, {line: number, address: string, size: number, variable_name?: string, data?: string, rawHex?: string, decimalValue?: object}>}
+         * @type {Map<number, {
+         *   line: number,
+         *   address: string,
+         *   size: number,
+         *   variable_name?: string,
+         *   data?: string,
+         *   rawHex?: string,
+         *   decimalValue?: {
+         *     unsigned: number,
+         *     signed: number,
+         *     bytes: number[],
+         *     binary: string,
+         *     ascii: string
+         *   }
+         * }>}
          */
         this.captures = new Map();
 
@@ -71,7 +85,7 @@ class KDBClient {
     /**
      * サーバーにコマンドを送信
      * @param {string} command - コマンド名
-     * @param {object} data - 送信データ
+     * @param {Record<string, any>} data - 送信データ
      */
     send(command, data = {}) {
         if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
@@ -83,7 +97,27 @@ class KDBClient {
 
     /**
      * 受信メッセージの処理
-     * @param {object} message - 受信メッセージ
+     * @param {{
+     *   type: string,
+     *   ports?: string[],
+     *   connected?: boolean,
+     *   port?: string,
+     *   files?: string[],
+     *   success?: boolean,
+     *   file_info?: {filepath: string, lines: string[], content: string, line_count: number},
+     *   error?: string,
+     *   line?: number,
+     *   content?: string,
+     *   capture_id?: number,
+     *   address?: string,
+     *   size?: number,
+     *   variable_name?: string,
+     *   data?: string,
+     *   pin?: number,
+     *   value?: number,
+     *   message?: string,
+     *   is_println?: boolean
+     * }} message - 受信メッセージ
      */
     handleMessage(message) {
         const { type } = message;
@@ -220,7 +254,11 @@ class KDBClient {
 
     /**
      * ファイル読み込み結果を処理
-     * @param {object} message - ファイル読み込みメッセージ
+     * @param {{
+     *   success: boolean,
+     *   file_info?: {filepath: string, lines: string[], content: string, line_count: number},
+     *   error?: string
+     * }} message - ファイル読み込みメッセージ
      */
     handleFileLoaded(message) {
         if (message.success) {
@@ -242,7 +280,7 @@ class KDBClient {
 
     /**
      * デバッガブレーク処理
-     * @param {object} message - デバッガブレークメッセージ
+     * @param {{line: number, content?: string}} message - デバッガブレークメッセージ
      */
     handleDebuggerBreak(message) {
         this.currentLine = message.line;
@@ -254,7 +292,13 @@ class KDBClient {
 
     /**
      * 変数キャプチャ処理
-     * @param {object} message - 変数キャプチャメッセージ
+     * @param {{
+     *   capture_id: number,
+     *   line: number,
+     *   address: string,
+     *   size: number,
+     *   variable_name?: string
+     * }} message - 変数キャプチャメッセージ
      */
     handleVariableCaptured(message) {
         this.captures.set(message.capture_id, {
@@ -271,7 +315,11 @@ class KDBClient {
 
     /**
      * キャプチャデータの更新
-     * @param {object} message - キャプチャデータメッセージ
+     * @param {{
+     *   capture_id: number,
+     *   data: string,
+     *   size?: number
+     * }} message - キャプチャデータメッセージ
      */
     updateCaptureData(message) {
         const capture = this.captures.get(message.capture_id);
@@ -289,7 +337,13 @@ class KDBClient {
     /**
      * 16進数文字列を10進数値に変換
      * @param {string} hexString - 16進数文字列
-     * @returns {object|null} 変換結果（unsigned、signed、bytes、binary、ascii）
+     * @returns {{
+     *   unsigned: number,
+     *   signed: number,
+     *   bytes: number[],
+     *   binary: string,
+     *   ascii: string
+     * }|null} 変換結果（unsigned、signed、bytes、binary、ascii）
      */
     hexToDecimal(hexString) {
         if (!hexString || hexString.length === 0 || hexString.length % 2 !== 0) {
@@ -331,7 +385,7 @@ class KDBClient {
             return {
                 unsigned: value,
                 signed: signedValue,
-                bytes: bytes.length,
+                bytes,
                 binary: value.toString(2).padStart(bitLength, '0'),
                 ascii: ascii
             };
@@ -354,7 +408,11 @@ class KDBClient {
 
     /**
      * デバッグ出力処理
-     * @param {object} message - デバッグ出力メッセージ
+     * @param {{
+     *   line?: number,
+     *   message: string,
+     *   is_println: boolean
+     * }} message - デバッグ出力メッセージ
      */
     handleDebugPrint(message) {
         const lineInfo = message.line ? ` (行: ${message.line})` : '';
@@ -383,7 +441,11 @@ class KDBClient {
 
     /**
      * メモリ表示の更新
-     * @param {object} message - メモリデータメッセージ
+     * @param {{
+     *   address: string,
+     *   data: string,
+     *   size: number
+     * }} message - メモリデータメッセージ
      */
     updateMemoryDisplay(message) {
         const display = document.getElementById('memoryDisplay');
@@ -402,7 +464,10 @@ class KDBClient {
 
     /**
      * ピンステータスの更新
-     * @param {object} message - ピンステータスメッセージ
+     * @param {{
+     *   pin: number,
+     *   value: number
+     * }} message - ピンステータスメッセージ
      */
     updatePinStatus(message) {
         const status = document.getElementById('pinStatus');
@@ -412,7 +477,11 @@ class KDBClient {
 
     /**
      * キャプチャ書き込み結果を処理
-     * @param {object} message - キャプチャ書き込み結果メッセージ
+     * @param {{
+     *   capture_id: number,
+     *   success: boolean,
+     *   message?: string
+     * }} message - キャプチャ書き込み結果メッセージ
      */
     handleCaptureWriteResult(message) {
         if (message.success) {
@@ -426,7 +495,12 @@ class KDBClient {
 
     /**
      * メモリ書き込み結果を処理
-     * @param {object} message - メモリ書き込み結果メッセージ
+     * @param {{
+     *   address: string,
+     *   size?: number,
+     *   success: boolean,
+     *   message?: string
+     * }} message - メモリ書き込み結果メッセージ
      */
     handleMemoryWriteResult(message) {
         if (message.success) {
@@ -445,6 +519,7 @@ class KDBClient {
         while (codeEl.firstChild) {
             codeEl.removeChild(codeEl.firstChild);
         }
+        this.breakpoints.clear();
 
         this.fileContent.forEach((line, index) => {
             const lineNum = index + 1;
@@ -453,6 +528,13 @@ class KDBClient {
 
             if (lineNum === this.currentLine) {
                 lineEl.classList.add('current');
+            }
+            if (line.includes("kdbcap(")) {
+                lineEl.classList.add('capture');
+            }
+            if (line.includes("kdbd;")) {
+                this.breakpoints.add(lineNum);
+                lineEl.classList.add('breakpoint');
             }
 
             const numberEl = document.createElement('div');
@@ -538,23 +620,13 @@ class KDBClient {
 
                     writeDiv.appendChild(writeInput);
                     writeDiv.appendChild(writeButton);
-                    /*
-                    // バイナリ表示（4バイト以下の場合のみ）
-                    if (decimal.bytes <= 4) {
+
+                    if (decimal.bytes.length >= 4) {
                         const binDiv = document.createElement('div');
                         binDiv.className = 'data-info';
-                        binDiv.textContent = `BIN: ${decimal.binary}`;
+                        binDiv.textContent = `hex: 0x${capture.data}`;
                         data.appendChild(binDiv);
                     }
-                    
-                    // ASCII文字表示
-                    if (decimal.ascii) {
-                        const asciiDiv = document.createElement('div');
-                        asciiDiv.className = 'data-info';
-                        asciiDiv.textContent = `ASCII: "${decimal.ascii}"`;
-                        data.appendChild(asciiDiv);
-                    }
-                    */
                 }
             } else {
                 data.textContent = 'データ未取得';
@@ -595,23 +667,27 @@ class KDBClient {
     /**
      * キャプチャデータを書き込み
      * @param {number} captureId - キャプチャID
-     * @param {string} hexData - 16進データ
+     * @param {string} intValue - intデータ
      */
-    writeCapture(captureId, hexData) {
-        if (!hexData || !hexData.trim()) {
+    writeCapture(captureId, intValue) {
+        if (!intValue || !intValue.trim()) {
             this.log('書き込みデータが入力されていません', 'error');
             return;
         }
-
-        // 16進文字列の検証
-        const clean = hexData.trim().replace(/[^0-9]/g, '');
-        if (clean.length === 0) {
-            this.log('無効な10進データです（例: 777）', 'error');
+        let data = 0n;
+        try {
+            data = BigInt(intValue);
+        } catch (_) {
+            this.log('無効な数値データです（例: 777）', 'error');
             return;
         }
+        let hex = data.toString(16);
+        if (hex.length % 2) {
+            hex = "0" + hex
+        }
 
-        this.send('write_capture', { capture_id: captureId, data: Number(clean).toString(16) });
-        this.log(`キャプチャ${captureId}に書き込み中: ${clean}`, 'info');
+        this.send('write_capture', { capture_id: captureId, data: hex });
+        this.log(`キャプチャ${captureId}に書き込み中: ${intValue}`, 'info');
     }
 
     /**
