@@ -67,7 +67,7 @@ void _KDB::init(unsigned line)
 		readbuf[1] = line;
 		sendOp(_KDB_INIT, 2);
 		readOp(200);
-		delay(100);
+		delay(200);
 	}
 }
 // print関数群の実装

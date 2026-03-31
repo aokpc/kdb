@@ -1,6 +1,8 @@
 #ifndef _KDB_H_
 #define _KDB_H_
 
+#ifndef KDB_DEBUG_DISABLE
+
 #include <Arduino.h>
 
 /*
@@ -104,5 +106,15 @@ extern _KDB __KDB;
  * - kdbprint("text"): デバッグ出力
  * - kdbprintln(value): デバッグ出力（改行付き）
  */
+
+#else // if DISABLE
+
+#define kdbcap(x)
+#define kdbinit
+#define kdbd
+#define kdbprint(...)  Serial.print(__VA_ARGS__)
+#define kdbprintln(...)  Serial.println(__VA_ARGS__)
+
+#endif // DISABLE?
 
 #endif // _KDB_H_

@@ -1,0 +1,144 @@
+{
+  "name": "kdb-ext",
+  "displayName": "KDB Debugger Extension",
+  "description": "Debug any Arduino bords.",
+  "version": "0.0.1",
+  "repository": "https://github.com/git/git",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "browser": "./dist/web/extension.js",
+  "categories": [
+    "Other"
+  ],
+  "main": "./dist/web/extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "configurationDefaults": {
+      "[arduino]": {
+        "editor.semanticHighlighting.enabled": true
+      },
+      "[cpp]": {
+        "editor.semanticHighlighting.enabled": true
+      }
+    },
+    "tokenColorCustomizations": {
+      "textMateRules": [
+        {
+          "scope": [
+            "entity.name.type.struct",
+            "entity.name.type.class",
+            "storage.type.struct.arduino"
+          ],
+          "settings": {
+            "foreground": "#4EC9B0"
+          }
+        }
+      ]
+    },
+    "semanticTokenColors": {
+      "struct": "#4EC9B0",
+      "type": "#4EC9B0",
+      "class": "#4EC9B0",
+      "variable": "#9CDCFE",
+      "variable.readonly": "#4FC1FF",
+      "variable.static": "#4FC1FF",
+      "property": "#9CDCFE",
+      "parameter": "#9CDCFE",
+      "function": "#DCDCAA",
+      "method": "#DCDCAA",
+      "macro": "#BD63C5"
+    },
+    "commands": [
+      {
+        "command": "kdb-ext.run",
+        "title": "Start KPC Debugger",
+        "icon": "$(play)"
+      },
+      {
+        "command": "kdb-ext.stop",
+        "title": "Stop KPC Debugger",
+        "icon": "$(stop)"
+      },
+      {
+        "command": "kdb-ext.continue",
+        "title": "Continue Execution",
+        "icon": "$(play)"
+      },
+      {
+        "command": "kdb-ext.writeCapture",
+        "title": "Write to Capture",
+        "icon": "$(edit)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "kdb-debugger",
+          "title": "KDB Debugger",
+          "icon": "./icons/kdb-debugger.svg"
+        }
+      ]
+    },
+    "views": {
+      "kdb-debugger": [
+        {
+          "id": "kdb-captures",
+          "name": "Captures",
+          "icon": "$(list-tree)"
+        },
+        {
+          "id": "kdb-debug-controls",
+          "name": "Debug Controls",
+          "icon": "$(debug)"
+        }
+      ]
+    },
+    "themes": [
+      {
+        "label": "*Dark Modern",
+        "uiTheme": "vs-dark",
+        "path": "./themes/dark_modern.json",
+        "icon": "$(symbol-color)"
+      },
+      {
+        "label": "*Dark Plus",
+        "uiTheme": "vs-dark",
+        "path": "./themes/dark_plus.json",
+        "icon": "$(symbol-color)"
+      },
+      {
+        "label": "*Light Modern",
+        "uiTheme": "vs",
+        "path": "./themes/light_modern.json",
+        "icon": "$(symbol-color)"
+      },
+      {
+        "label": "*Light Plus",
+        "uiTheme": "vs",
+        "path": "./themes/light_plus.json",
+        "icon": "$(symbol-color)"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package-web",
+    "compile-web": "webpack",
+    "watch-web": "webpack --watch",
+    "package-web": "webpack --mode production"
+  },
+  "dependencies": {
+    "serialport": "^12.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "18.x",
+    "@types/serialport": "^8.0.5",
+    "@types/vscode": "^1.85.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.3.3",
+    "vscode-arduino-api": "^0.1.2",
+    "vscode-languageclient": "^9.0.1",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
+  }
+}
