@@ -93,7 +93,7 @@ class KDBDebuggerController {
         this.serialHandler.on('debug_print', (args) => {
             const { message, line } = args;
             const timestamp = new Date().toLocaleTimeString();
-            this.outputChannel.appendLine(`[${timestamp} print at:${line}] ${message}`);
+            this.outputChannel.appendLine(`[${timestamp}] print@${line}> ${message}`);
             this.outputChannel.show();
         });
 
@@ -274,11 +274,14 @@ class KDBDebuggerController {
         try {
             let value = BigInt(intValueStr);
             let hex = value.toString(16);
+            if (hex.length % 2) {
+                hex = '0' + hex;
+            }
 
             // 有効なサイズになるように0パディング
             const requiredLength = capture.size * 2;
             if (hex.length < requiredLength) {
-                hex = hex.padStart(requiredLength, '0');
+                hex = hex.padEnd(requiredLength, '0');
             }
 
             const buffer = Buffer.from(hex, 'hex');
@@ -511,7 +514,7 @@ class CaptureTreeProvider implements vscode.TreeDataProvider<CaptureTreeItem> {
     readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
     private captureItemMap: Map<number, CaptureTreeItem> = new Map();
 
-    constructor(private debuggerController: KDBDebuggerController) { }
+    constructor() { }
 
     getTreeItem(element: CaptureTreeItem): vscode.TreeItem {
         return element;
@@ -520,7 +523,7 @@ class CaptureTreeProvider implements vscode.TreeDataProvider<CaptureTreeItem> {
     getChildren(element?: CaptureTreeItem): Thenable<CaptureTreeItem[]> {
         if (!element) {
             // ルートノードの場合、すべてのキャプチャを返す
-            const captures = this.debuggerController.getAllCaptures();
+            const captures = debuggerController.getAllCaptures();
             console.log(`[CaptureTreeProvider.getChildren] Total captures from controller: ${captures.size}`);
             const items: CaptureTreeItem[] = [];
             const currentCapIds = new Set(captures.keys());
@@ -584,8 +587,8 @@ class CaptureTreeItem extends vscode.TreeItem {
         collapsibleState: vscode.TreeItemCollapsibleState
     ) {
         const label = capture.variable_name
-            ? `CAP ${capId}: ${capture.variable_name}`
-            : `CAP ${capId}`;
+            ? `${capId}: ${capture.variable_name}`
+            : `${capId}`;
 
         super(label, collapsibleState);
         this.updateDescription();
@@ -616,7 +619,7 @@ class DebugControlsTreeProvider implements vscode.TreeDataProvider<DebugControlI
     private onDidChangeTreeDataEmitter = new vscode.EventEmitter<DebugControlItem | undefined>();
     readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
 
-    constructor(private debuggerController: KDBDebuggerController) { }
+    constructor() { }
 
     getTreeItem(element: DebugControlItem): vscode.TreeItem {
         return element;
@@ -681,30 +684,36 @@ class DebugControlItem extends vscode.TreeItem {
 
 export function activate(context: vscode.ExtensionContext) {
     // 既存のコントローラーがあればクリーンアップ
-    if (debuggerController) {
-        debuggerController.disposeOutputChannel();
-    }
 
-    debuggerController = new KDBDebuggerController();
 
     // ツリープロバイダーの作成
-    const captureTreeProvider = new CaptureTreeProvider(debuggerController);
-    const debugControlsTreeProvider = new DebugControlsTreeProvider(debuggerController);
+    const captureTreeProvider = new CaptureTreeProvider();
+    const debugControlsTreeProvider = new DebugControlsTreeProvider();
 
-    // ツリープロバイダーを設定
-    debuggerController.setCaptureTreeProvider(captureTreeProvider);
+
 
     // ビューの登録
     vscode.window.registerTreeDataProvider('kdb-captures', captureTreeProvider);
     vscode.window.registerTreeDataProvider('kdb-debug-controls', debugControlsTreeProvider);
 
-    // serialHandler のイベントリスナーを追加して、キャプチャ更新時に自動リフレッシュ
-    debuggerController.serialHandler.on('variable_captured', () => {
-        captureTreeProvider.refresh();
-    });
+
 
     // kdb-ext.run コマンド: デバッガを開始
     const runCommand = vscode.commands.registerCommand('kdb-ext.run', async () => {
+        if (debuggerController) {
+            debuggerController.disposeOutputChannel();
+        }
+
+        debuggerController = new KDBDebuggerController();
+
+        // ツリープロバイダーを設定
+        debuggerController.setCaptureTreeProvider(captureTreeProvider);
+
+        // serialHandler のイベントリスナーを追加して、キャプチャ更新時に自動リフレッシュ
+        debuggerController.serialHandler.on('variable_captured', () => {
+            captureTreeProvider.refresh();
+        });
+
         await debuggerController.start();
         captureTreeProvider.refresh();
         debugControlsTreeProvider.refresh();
